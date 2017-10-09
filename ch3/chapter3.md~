@@ -1,0 +1,82 @@
+# Chapter 3: Index Operations
+
+## Query Plans
+
+
+
+### Tradeoffs between foreground and background indexes
+
+* Foreground indexes
+
+ * are fast but block all incoming operations on the collection until it's complete
+ * are only acceptable to use on production environments during a maintenance window
+ 
+* Background indexes
+
+ * Are nonblocking but they are slower to complete
+ * The speed to build an Index in the background will depend on the load of read/write operations happening in the foreground
+ * Should be used as the deferred way of adding indexes to production machines if you want to avoid maintenance windows
+ 
+Regardless of the type of index being built, it will impact the read/write perfomance as the index building process consumes resources.
+
+Use the following command to import the new `restaurants` dataset:
+
+```javascript
+mongoimport -d m201 -c restaurants --drop restaurants.json
+```
+
+### How to use Background Indexes
+
+To create an index in the background we can use the following:
+
+```javascript
+db.restaurants.createIndex({"cuisine":1, "name":1, "address.zipcode":1}, {"background": true})
+```
+
+By default `"background"` is set to `false`
+
+### Using `currentOp()` and `killOp()`
+
+To check how a process is going/if an index is finished building you can use the following:
+
+```javascript
+db.currentOp()
+```
+
+Or to specifically search for index building operations use the following:
+
+```javascript
+// from another shell, switch to the m201 database, and find all index-build
+// operations
+use m201
+db.currentOp(
+  {
+    $or: [
+      { op: "command", "query.createIndexes": { $exists: true } },
+      { op: "insert", ns: /\.system\.indexes\b/ }
+    ]
+  }
+)
+
+```
+Using these commands you should see a key called `opid` which is the unique identifier for the running process.  If you need to prematurely kill an operation you can use the following command to kill the operation:
+
+```javascript
+db.killOp([the_op_id])
+```
+
+## Understanding Explain
+
+
+
+## Forcing Indexes with Hint
+
+
+
+## Resource Allocation for Indexes
+
+
+
+## Basic Benchmarking
+
+
